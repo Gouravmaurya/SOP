@@ -41,7 +41,7 @@ export default function SagaMap() {
   const getSegmentPath = (p1: {x: number, y: number}, p2: {x: number, y: number}) => {
     const dx = p2.x - p1.x;
     const midX = p1.x + dx * 0.5;
-    return `M ${p1.x}% ${p1.y}% C ${midX}% ${p1.y}%, ${midX}% ${p2.y}%, ${p2.x}% ${p2.y}%`;
+    return `M ${p1.x} ${p1.y} C ${midX} ${p1.y}, ${midX} ${p2.y}, ${p2.x} ${p2.y}`;
   };
 
   return (
@@ -71,16 +71,30 @@ export default function SagaMap() {
           {/* Background Grids */}
           <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
           
-          <div className="absolute inset-0">
-            <div className="relative w-full h-full p-20">
+          {/* Scrollable Map Container */}
+          <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
+            <div className="relative w-full h-[1400px] p-20">
               
               {/* SVG Path Layer */}
-              <svg className="absolute inset-0 w-full h-full pointer-events-none z-0 overflow-visible">
+              <svg 
+                viewBox="0 0 100 100" 
+                preserveAspectRatio="none" 
+                className="absolute inset-0 w-full h-full pointer-events-none z-0 overflow-visible"
+              >
                 <defs>
-                  <linearGradient id="path-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <linearGradient id="path-grad" x1="0%" y1="0%" x2="0%" y2="100%">
                     <stop offset="0%" stopColor="#0ea5e9" />
                     <stop offset="100%" stopColor="#a855f7" />
                   </linearGradient>
+                  
+                  {/* High-Definition Radial Neon Glow Filter */}
+                  <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="6" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
                 </defs>
 
                 {levels.slice(0, -1).map((level, i) => {
@@ -91,24 +105,58 @@ export default function SagaMap() {
 
                   return (
                     <g key={`path-${level.id}`}>
-                      {/* Background Shadow */}
-                      <path d={path} fill="none" stroke="rgba(0,0,0,0.4)" strokeWidth="10" strokeLinecap="round" className="blur-md" />
+                      {/* Volumetric Dark Shadow underneath */}
+                      <path 
+                        d={path} 
+                        fill="none" 
+                        stroke="rgba(0,0,0,0.5)" 
+                        strokeWidth="12" 
+                        strokeLinecap="round" 
+                        vectorEffect="non-scaling-stroke"
+                        className="blur-md" 
+                      />
                       
-                      {/* Base Path (Dotted) */}
-                      <path d={path} fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeDasharray="1, 10" className="opacity-10" />
+                      {/* Premium Dashed Base Pathway (Locked segment) */}
+                      <path 
+                        d={path} 
+                        fill="none" 
+                        stroke="rgba(255,255,255,0.12)" 
+                        strokeWidth="3" 
+                        strokeLinecap="round" 
+                        strokeDasharray="6, 12" 
+                        vectorEffect="non-scaling-stroke"
+                      />
 
-                      {/* Animated Active Path */}
+                      {/* Unlocked Segment: Volumetric Neon Glow Aura */}
                       {isUnlocked && (
                         <motion.path 
                           d={path} 
                           fill="none" 
                           stroke="url(#path-grad)" 
-                          strokeWidth="3" 
+                          strokeWidth="10" 
                           strokeLinecap="round"
+                          filter="url(#neon-glow)"
+                          vectorEffect="non-scaling-stroke"
                           initial={{ pathLength: isUnlockingNow ? 0 : 1 }}
                           animate={{ pathLength: 1 }}
                           transition={{ duration: 1.5, ease: "easeInOut", delay: isUnlockingNow ? 0.5 : 0 }}
-                          className="opacity-60"
+                          className="opacity-45"
+                        />
+                      )}
+
+                      {/* Unlocked Segment: High-Energy Active Laser Core */}
+                      {isUnlocked && (
+                        <motion.path 
+                          d={path} 
+                          fill="none" 
+                          stroke="#00f3ff" 
+                          strokeWidth="3" 
+                          strokeLinecap="round"
+                          vectorEffect="non-scaling-stroke"
+                          initial={{ pathLength: isUnlockingNow ? 0 : 1 }}
+                          animate={{ pathLength: 1 }}
+                          transition={{ duration: 1.5, ease: "easeInOut", delay: isUnlockingNow ? 0.5 : 0 }}
+                          className="opacity-90"
                         />
                       )}
                     </g>
@@ -140,7 +188,7 @@ export default function SagaMap() {
           </div>
           
           {/* Map HUD */}
-          <div className="absolute top-6 left-6 flex flex-col gap-3">
+          <div className="absolute top-6 left-6 flex flex-col gap-3 pointer-events-none z-20">
              <div className="glass-panel px-4 py-2 bg-black/40 border-white/10 flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-[#39ff14] animate-pulse" />
                 <span className="text-[10px] font-black text-white/60 tracking-widest uppercase italic">Atlas Synchronized</span>

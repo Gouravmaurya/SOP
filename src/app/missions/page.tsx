@@ -3,13 +3,11 @@
 import { useState, useEffect } from "react";
 import { useGame } from "@/context/GameContext";
 import { QuizComponent } from "@/components/game/QuizComponent";
-import { ChecklistComponent } from "@/components/game/ChecklistComponent";
-import { SimulationCanvas } from "@/components/game/SimulationCanvas";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, Star, ArrowLeft, RefreshCw, Map as MapIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { levelQuestions, levelChecklists } from "@/lib/questions";
+import { levelQuestions } from "@/lib/questions";
 
 export default function MissionPage() {
   const { currentLevel, completeLevel, updateStats } = useGame();
@@ -27,14 +25,10 @@ export default function MissionPage() {
   if (!currentLevel) return null;
 
   const handleComplete = (score: number) => {
-    let stars = 1;
-    if (currentLevel.type === "quiz") {
-      const qCount = levelQuestions[currentLevel.id]?.length || 2;
-      const ratio = score / qCount;
-      stars = ratio >= 0.8 ? 3 : ratio >= 0.5 ? 2 : 1;
-    } else {
-      stars = score >= 3 ? 3 : score >= 2 ? 2 : 1;
-    }
+    const qCount = levelQuestions[currentLevel.id]?.length || 2;
+    const ratio = score / qCount;
+    const stars = ratio >= 0.8 ? 3 : ratio >= 0.5 ? 2 : 1;
+    
     setResults({ score, stars });
     setMissionState("summary");
     completeLevel(currentLevel.id, score * 100, stars);
@@ -59,28 +53,6 @@ export default function MissionPage() {
             levelId={currentLevel.id} 
             questions={quizQuestions}
             onComplete={handleComplete}
-          />
-        );
-      case "technical":
-        const checklistSteps = levelChecklists[currentLevel.id] || [
-          { id: "1", text: "Verify Site Identity & Work Order", correctOrder: 0 },
-          { id: "2", text: "Perform Visual Risk Assessment", correctOrder: 1 },
-          { id: "3", text: "Don Arc Flash PPE", correctOrder: 2 },
-          { id: "4", text: "Check for Voltage Presence", correctOrder: 3 },
-          { id: "5", text: "Execute Isolation Procedure", correctOrder: 4 }
-        ];
-        return (
-          <ChecklistComponent 
-            levelId={currentLevel.id} 
-            steps={checklistSteps}
-            onComplete={(success) => handleComplete(success ? 3 : 1)}
-          />
-        );
-      case "simulation":
-        return (
-          <SimulationCanvas 
-            onHazardFound={(p) => updateStats(10, p)}
-            onComplete={() => handleComplete(3)}
           />
         );
       default:

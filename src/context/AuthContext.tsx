@@ -115,12 +115,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email,
           password
         });
-        if (error) throw error;
+        if (error) throw new Error(error.message);
         router.push("/");
       }
-    } catch (error) {
+    } catch (error: any) {
       setLoading(false);
-      throw error;
+      throw new Error(error.message || error);
     }
   };
 
@@ -153,12 +153,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
         });
-        if (error) throw error;
+        if (error) throw new Error(error.message);
         router.push("/");
       }
-    } catch (error) {
+    } catch (error: any) {
       setLoading(false);
-      throw error;
+      throw new Error(error.message || error);
     }
   };
 
@@ -171,11 +171,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.push("/login");
       } else {
         const { error } = await supabase.auth.signOut();
-        if (error) throw error;
+        if (error) throw new Error(error.message);
         router.push("/login");
       }
-    } catch (error) {
-      console.error("Error during log out:", error);
+    } catch (error: any) {
+      console.error("Error during log out:", error.message || error);
     } finally {
       setLoading(false);
     }

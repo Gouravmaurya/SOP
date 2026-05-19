@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Level } from "@/lib/mockData";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 interface GameStats {
   xp: number;
@@ -27,13 +29,14 @@ interface GameContextType {
 }
 
 const initialLevels: Level[] = [
-  { id: 1, title: "FOUNDATION LEVEL", description: "Learn the core basics of safety and operational awareness.", type: "quiz", status: "current", stars: 0, points: 500, position: { x: 15, y: 70 } },
-  { id: 2, title: "ESSENTIALS LEVEL", description: "Master the sequence of technical steps for maximum efficiency.", type: "technical", status: "locked", stars: 0, points: 1000, position: { x: 30, y: 30 } },
-  { id: 3, title: "OPERATIONAL LEVEL", description: "Apply SOPs in high-pressure real-world simulations.", type: "simulation", status: "locked", stars: 0, points: 1500, position: { x: 50, y: 60 } },
-  { id: 4, title: "ADVANCED LEVEL", description: "Handle complex failure scenarios and emergency protocols.", type: "simulation", status: "locked", stars: 0, points: 2000, position: { x: 70, y: 25 } },
-  { id: 5, title: "EXPERT LEVEL", description: "Identify subtle hazards in complex electrical environments.", type: "quiz", status: "locked", stars: 0, points: 2500, position: { x: 85, y: 65 } },
-  { id: 6, title: "MASTER LEVEL", description: "Comprehensive final evaluation of field competency.", type: "simulation", status: "locked", stars: 0, points: 3000, position: { x: 60, y: 85 } },
-  { id: 7, title: "CHAMPION LEVEL", description: "Become a sector mentor and validate peer procedures.", type: "technical", status: "locked", stars: 0, points: 5000, position: { x: 35, y: 85 } },
+  { id: 1, title: "PREWORK SAFETY", description: "Learn the essential safety protocols before starting any field work.", type: "quiz", status: "current", stars: 0, points: 500, position: { x: 50, y: 7 } },
+  { id: 2, title: "FOUNDATION CHECK", description: "Inspect the physical structure and surrounding area for stability.", type: "quiz", status: "locked", stars: 0, points: 750, position: { x: 32, y: 19 } },
+  { id: 3, title: "PPE ESSENTIALS", description: "Correctly verify the wearing sequence of Personal Protective Equipment.", type: "quiz", status: "locked", stars: 0, points: 1000, position: { x: 68, y: 31 } },
+  { id: 4, title: "REPTILE CHECK", description: "Identify and manage wildlife hazards within the equipment area.", type: "quiz", status: "locked", stars: 0, points: 1200, position: { x: 32, y: 43 } },
+  { id: 5, title: "DOOR MECHANICS", description: "Understand the proper opening and securing of unit doors.", type: "quiz", status: "locked", stars: 0, points: 1500, position: { x: 68, y: 55 } },
+  { id: 6, title: "INTERNAL INSPECTION", description: "Conduct a thorough check of internal components and wiring.", type: "quiz", status: "locked", stars: 0, points: 1800, position: { x: 50, y: 67 } },
+  { id: 7, title: "CABLE ROUTING", description: "Identify correct routing and alignment procedures for high-voltage cables.", type: "quiz", status: "locked", stars: 0, points: 2000, position: { x: 32, y: 79 } },
+  { id: 8, title: "HAZARD ANALYSIS", description: "Final assessment on comprehensive hazard identification.", type: "quiz", status: "locked", stars: 0, points: 2500, position: { x: 50, y: 91 } },
 ];
 
 const defaultStats: GameStats = {
@@ -49,30 +52,143 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const { user, isMock } = useAuth();
   const [levels, setLevels] = useState<Level[]>(initialLevels);
   const [unlockingLevelId, setUnlockingLevelId] = useState<number | null>(null);
   const [stats, setStats] = useState<GameStats>(defaultStats);
   const [currentLevel, setCurrentLevelState] = useState<Level | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Persistence: Load from localStorage
+  // Persistence: Load from Supabase (or localStorage in fallback/mock mode)
   useEffect(() => {
-    const savedLevels = localStorage.getItem("sop_levels");
-    const savedStats = localStorage.getItem("sop_stats");
-    
-    if (savedLevels) setLevels(JSON.parse(savedLevels));
-    if (savedStats) setStats(JSON.parse(savedStats));
-    
-    setIsInitialized(true);
-  }, []);
+    const loadProgress = async () => {
+      // Local Fallback Loader function
+      const loadLocalProgress = () => {
+        const savedLevels = localStorage.getItem("sop_levels");
+        const savedStats = localStorage.getItem("sop_stats");
+        if (savedLevels) {
+          try {
+            const parsed = JSON.parse(savedLevels);
+            if (Array.isArray(parsed) && parsed.length === initialLevels.length) {
+              setLevels(parsed);
+            } else {
+              setLevels(initialLevels);
+            }
+          } catch (e) {
+            setLevels(initialLevels);
+          }
+        } else {
+          setLevels(initialLevels);
+        }
+        if (savedStats) {
+          try {
+            setStats(JSON.parse(savedStats));
+          } catch (e) {
+            setStats(defaultStats);
+          }
+        } else {
+          setStats(defaultStats);
+        }
+      };
 
-  // Persistence: Save to localStorage
+      if (isMock || !supabase || !user) {
+        loadLocalProgress();
+        setIsInitialized(true);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("user_progress")
+          .select("levels, stats")
+          .eq("user_id", user.id)
+          .single();
+
+        if (error) {
+          // If the relation table doesn't exist (PGRST205 / 42P01) or other cache mismatch, fallback locally
+          if (error.code === "PGRST205" || error.message?.includes("cache") || error.message?.includes("relation")) {
+            console.warn("⚠️ [Supabase] 'user_progress' table not found. Using local resilient storage.");
+            loadLocalProgress();
+          } else if (error.code === "PGRST116" || error.message?.includes("no rows")) {
+            // First login: No database progress record exists yet, create one securely
+            const { error: insertError } = await supabase
+              .from("user_progress")
+              .insert({
+                user_id: user.id,
+                levels: initialLevels,
+                stats: defaultStats,
+                updated_at: new Date().toISOString()
+              });
+            if (insertError) {
+              console.error(
+                "Error creating initial profile in Supabase:", 
+                insertError.message, 
+                insertError.details, 
+                insertError.hint
+              );
+            }
+            setLevels(initialLevels);
+            setStats(defaultStats);
+          } else {
+            console.error("Database query failed:", error.message, error.details);
+            loadLocalProgress();
+          }
+        } else if (data && data.levels && data.stats) {
+          // Successfully loaded from the database!
+          if (Array.isArray(data.levels) && data.levels.length === initialLevels.length) {
+            setLevels(data.levels);
+          } else {
+            setLevels(initialLevels);
+          }
+          setStats(data.stats as GameStats);
+        } else {
+          loadLocalProgress();
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch user progress:", err.message || err);
+        loadLocalProgress();
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    loadProgress();
+  }, [user, isMock]);
+
+  // Persistence: Save/Sync back to Supabase (and mirror locally)
   useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem("sop_levels", JSON.stringify(levels));
-      localStorage.setItem("sop_stats", JSON.stringify(stats));
-    }
-  }, [levels, stats, isInitialized]);
+    if (!isInitialized) return;
+
+    // Synchronize locally
+    localStorage.setItem("sop_levels", JSON.stringify(levels));
+    localStorage.setItem("sop_stats", JSON.stringify(stats));
+
+    // Synchronize to Supabase database if authenticated
+    const saveToSupabase = async () => {
+      if (isMock || !supabase || !user) return;
+
+      try {
+        const { error } = await supabase
+          .from("user_progress")
+          .upsert({
+            user_id: user.id,
+            levels: levels,
+            stats: stats,
+            updated_at: new Date().toISOString()
+          });
+
+        if (error) {
+          if (error.code !== "PGRST205" && !error.message?.includes("cache") && !error.message?.includes("relation")) {
+            console.error("Failed to save progress to Supabase:", error.message, error.details);
+          }
+        }
+      } catch (err: any) {
+        console.error("Failed to save progress to Supabase:", err.message || err);
+      }
+    };
+
+    saveToSupabase();
+  }, [levels, stats, isInitialized, user, isMock]);
 
   const completeLevel = (levelId: number, xpGained: number, starsEarned: number) => {
     let nextId: number | null = null;
