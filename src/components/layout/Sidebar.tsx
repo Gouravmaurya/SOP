@@ -21,9 +21,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/" },
-  { icon: Target, label: "Missions", href: "/missions" },
   { icon: MapIcon, label: "Levels", href: "/map" },
-  { icon: Library, label: "SOP Library", href: "/library" },
   { icon: BarChart3, label: "My Progress", href: "/progress" },
   { icon: Trophy, label: "Leaderboard", href: "/leaderboard" },
   { icon: Award, label: "Badges", href: "/badges" },

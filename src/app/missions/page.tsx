@@ -13,7 +13,7 @@ export default function MissionPage() {
   const { currentLevel, completeLevel, updateStats } = useGame();
   const router = useRouter();
   const [missionState, setMissionState] = useState<"briefing" | "playing" | "summary">("briefing");
-  const [results, setResults] = useState<{ score: number; stars: number } | null>(null);
+  const [results, setResults] = useState<{ score: number; stars: number; accuracy: number } | null>(null);
 
   // If no level selected, redirect to map
   useEffect(() => {
@@ -28,8 +28,9 @@ export default function MissionPage() {
     const qCount = levelQuestions[currentLevel.id]?.length || 2;
     const ratio = score / qCount;
     const stars = ratio >= 0.8 ? 3 : ratio >= 0.5 ? 2 : 1;
+    const accuracy = Math.round(ratio * 100);
     
-    setResults({ score, stars });
+    setResults({ score, stars, accuracy });
     setMissionState("summary");
     completeLevel(currentLevel.id, score * 100, stars);
   };
@@ -154,7 +155,7 @@ export default function MissionPage() {
                 </div>
                 <div className="p-6 rounded-2xl bg-green-500/10 border border-green-500/20">
                   <div className="text-[10px] text-green-500 uppercase font-black tracking-widest mb-1">Accuracy</div>
-                  <div className="text-2xl font-black text-white">100%</div>
+                  <div className="text-2xl font-black text-white">{results.accuracy}%</div>
                 </div>
               </div>
 

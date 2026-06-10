@@ -9,16 +9,16 @@ import { useEffect } from "react";
 
 function AppContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const isLoginPage = pathname === "/login";
 
   // Protection logic
   useEffect(() => {
-    if (!isAuthenticated && !isLoginPage) {
+    if (!loading && !isAuthenticated && !isLoginPage) {
       router.push("/login");
     }
-  }, [isAuthenticated, isLoginPage, router]);
+  }, [loading, isAuthenticated, isLoginPage, router]);
 
   if (isLoginPage) {
     return <>{children}</>;

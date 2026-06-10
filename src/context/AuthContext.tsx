@@ -10,12 +10,13 @@ export interface User {
   email: string;
   avatar: string;
   role: string;
+  department?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, nameOrPass: string, pass?: string) => Promise<void>;
-  register: (email: string, name: string, pass?: string) => Promise<void>;
+  register: (email: string, name: string, department: string, pass?: string) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   loading: boolean;
@@ -48,7 +49,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "Anonymous User",
               email: session.user.email || "",
               avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email || "sop"}`,
-              role: "Field Engineer" // Default premium role
+              role: "Field Engineer", // Default premium role
+              department: session.user.user_metadata?.department || "Operations"
             };
             setUser(mappedUser);
             localStorage.setItem("sop_user", JSON.stringify(mappedUser));
@@ -71,7 +73,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "Anonymous User",
               email: session.user.email || "",
               avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email || "sop"}`,
-              role: "Field Engineer"
+              role: "Field Engineer",
+              department: session.user.user_metadata?.department || "Operations"
             };
             setUser(mappedUser);
             localStorage.setItem("sop_user", JSON.stringify(mappedUser));
@@ -103,7 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: defaultName,
           email: email,
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-          role: "Field Engineer"
+          role: "Field Engineer",
+          department: "Operations"
         };
         setUser(mockUser);
         localStorage.setItem("sop_user", JSON.stringify(mockUser));
@@ -124,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const register = async (email: string, name: string, pass?: string) => {
+  const register = async (email: string, name: string, department: string, pass?: string) => {
     setLoading(true);
     try {
       if (isSupabaseFallback || !supabase) {
@@ -134,7 +138,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: name,
           email: email,
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-          role: "Trainee"
+          role: "Trainee",
+          department: department
         };
         setUser(mockUser);
         localStorage.setItem("sop_user", JSON.stringify(mockUser));
@@ -149,7 +154,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           password: pass,
           options: {
             data: {
-              name: name
+              name: name,
+              department: department
             }
           }
         });

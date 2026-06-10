@@ -17,14 +17,27 @@ import {
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-const stats = [
-  { label: "Completion Rate", value: "85%", icon: Activity, color: "text-[#22c55e]", bg: "bg-[#22c55e]/10" },
-  { label: "Learning XP", value: "4.8k", icon: Zap, color: "text-[#facc15]", bg: "bg-[#facc15]/10" },
-  { label: "SOP Mastery", value: "12/48", icon: ShieldCheck, color: "text-[#0ea5e9]", bg: "bg-[#0ea5e9]/10" },
-  { label: "Avg. Accuracy", value: "92%", icon: Target, color: "text-[#a855f7]", bg: "bg-[#a855f7]/10" },
-];
+
+
+import { useAuth } from "@/context/AuthContext";
+import { useGame } from "@/context/GameContext";
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const { stats, levels } = useGame();
+
+  const totalQuestions = 48; // Total SOPs mock
+  const completedLevels = levels.filter(l => l.status === "completed").length;
+  const completionRate = completedLevels > 0 ? Math.round((completedLevels / totalQuestions) * 100) : 0;
+  const accuracy = completedLevels > 0 ? Math.round((stats.stars / (completedLevels * 3)) * 100) : 0;
+
+  const dashboardStats = [
+    { label: "Completion Rate", value: `${completionRate}%`, icon: Activity, color: "text-[#22c55e]", bg: "bg-[#22c55e]/10" },
+    { label: "Learning XP", value: stats.xp.toLocaleString(), icon: Zap, color: "text-[#facc15]", bg: "bg-[#facc15]/10" },
+    { label: "SOP Mastery", value: `${completedLevels}/${totalQuestions}`, icon: ShieldCheck, color: "text-[#0ea5e9]", bg: "bg-[#0ea5e9]/10" },
+    { label: "Avg. Accuracy", value: `${accuracy}%`, icon: Target, color: "text-[#a855f7]", bg: "bg-[#a855f7]/10" },
+  ];
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-10 pb-20">
       {/* Dynamic Hero Section */}
@@ -59,8 +72,8 @@ export default function Dashboard() {
             </h1>
             
             <p className="text-white/50 text-sm font-medium max-w-md italic">
-              Level 14 • Senior Metering Technician <br />
-              <span className="text-white/30 font-bold uppercase tracking-widest text-[10px]">SOP</span>
+              Operator: {user?.name || "Aarav Singh"} <br />
+              <span className="text-white/30 font-bold uppercase tracking-widest text-[10px]">SOP {user?.department || "Operations"}</span>
             </p>
           </motion.div>
           
@@ -100,7 +113,7 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
+        {dashboardStats.map((stat, i) => (
           <motion.div
             key={stat.label}
             initial={{ y: 20, opacity: 0 }}
@@ -172,29 +185,29 @@ export default function Dashboard() {
           
           <div className="glass-panel overflow-hidden border-white/5">
             {[
-              { name: 'Sarah Miller', score: '12,450', rank: 1, avatar: '7' },
-              { name: 'James Chen', score: '11,200', rank: 2, avatar: '3' },
-              { name: 'Emma Wilson', score: '10,800', rank: 3, avatar: '12' },
-              { name: 'Aarav (You)', score: '4,800', rank: 14, avatar: 'Aarav', self: true },
-            ].sort((a, b) => a.rank - b.rank).map((user) => (
-              <div key={user.name} className={cn(
+              { name: 'Priya Sharma', score: '12,450', rank: 1, avatar: '7' },
+              { name: 'Rahul Verma', score: '11,200', rank: 2, avatar: '3' },
+              { name: 'Sneha Patel', score: '10,800', rank: 3, avatar: '12' },
+              { name: `${user?.name || 'Aarav'} (You)`, score: stats.xp.toLocaleString(), rank: stats.xp > 10000 ? 3 : 14, avatar: user?.avatar?.split('=')[1] || 'Aarav', self: true },
+            ].sort((a, b) => a.rank - b.rank).map((userItem) => (
+              <div key={userItem.name} className={cn(
                 "flex items-center justify-between p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors",
-                user.self && "bg-[#0ea5e9]/5"
+                userItem.self && "bg-[#0ea5e9]/5"
               )}>
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     "w-6 text-[10px] font-black text-center italic",
-                    user.rank === 1 ? "text-[#facc15]" : "text-white/40"
-                  )}>#{user.rank}</div>
+                    userItem.rank === 1 ? "text-[#facc15]" : "text-white/40"
+                  )}>#{userItem.rank}</div>
                   <div className="w-8 h-8 rounded-full border border-white/10 p-0.5">
-                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.avatar}`} className="w-full h-full rounded-full" />
+                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userItem.avatar}`} className="w-full h-full rounded-full" />
                   </div>
                   <span className={cn(
                     "text-xs font-bold",
-                    user.self ? "text-[#0ea5e9]" : "text-white/80"
-                  )}>{user.name}</span>
+                    userItem.self ? "text-[#0ea5e9]" : "text-white/80"
+                  )}>{userItem.name}</span>
                 </div>
-                <span className="text-[10px] font-black text-white italic">{user.score} XP</span>
+                <span className="text-[10px] font-black text-white italic">{userItem.score} XP</span>
               </div>
             ))}
           </div>

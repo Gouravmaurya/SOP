@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [department, setDepartment] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -35,7 +36,7 @@ export default function LoginPage() {
       if (isLogin) {
         await login(email, password);
       } else {
-        await register(email, name, password);
+        await register(email, name, department, password);
       }
     } catch (err: any) {
       console.error("Authentication action failed:", err);
@@ -166,6 +167,25 @@ export default function LoginPage() {
                     onChange={(e) => setName(e.target.value)}
                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-[#0ea5e9]/50 focus:bg-white/[0.08] transition-all"
                     placeholder="Enter full name..."
+                  />
+                </div>
+              </div>
+            )}
+
+            {!isLogin && (
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1">Department</label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-4 flex items-center text-white/20 group-focus-within:text-[#0ea5e9] transition-colors">
+                    <Command size={18} />
+                  </div>
+                  <input 
+                    type="text" 
+                    required
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-[#0ea5e9]/50 focus:bg-white/[0.08] transition-all"
+                    placeholder="e.g. MMG, RRG, RCB..."
                   />
                 </div>
               </div>
