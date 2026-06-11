@@ -1,11 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Trophy, Star, Shield, Medal, Award } from "lucide-react";
+import { Trophy, Star, Medal, Award } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useGame } from "@/context/GameContext";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 import { useState, useEffect } from "react";
 
 interface LeaderboardEntry {
@@ -21,62 +20,71 @@ export default function LeaderboardPage() {
   const { user } = useAuth();
   const { stats } = useGame();
   const [competitors, setCompetitors] = useState<LeaderboardEntry[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch leaderboard and sync current user's XP
   useEffect(() => {
-    const fetchLeaderboard = async () => {
-      const mockData: LeaderboardEntry[] = [
-        { name: "Priya Sharma", score: 12450, badge: "Diamond", avatar: "7", department: "MMG" },
-        { name: "Aditya Kumar", score: 13100, badge: "Diamond", avatar: "9", department: "RRG" },
-        { name: "Rahul Verma", score: 11200, badge: "Gold", avatar: "3", department: "RRG" },
-        { name: "Neha Singh", score: 9200, badge: "Silver", avatar: "5", department: "ZONE" },
-        { name: "Sneha Patel", score: 10800, badge: "Silver", avatar: "12", department: "RCB" },
-        { name: "Vikram Reddy", score: 8500, badge: "Bronze", avatar: "15", department: "MRG" },
-        { name: "Arjun Menon", score: 7200, badge: "Bronze", avatar: "8", department: "MMG" },
-        { name: "Isha Prabhu", score: 6800, badge: "Bronze", avatar: "11", department: "RCB" },
-        { name: "Rohan Gupta", score: 5500, badge: "Silver", avatar: "6", department: "ZONE" },
-        { name: "Divya Nair", score: 4200, badge: "Bronze", avatar: "14", department: "RRG" },
-      ];
-
+    const fetchAndSync = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const response = await fetch("/api/leaderboard");
+        // First, update current user's XP in database if logged in
+        if (user && stats.xp >= 0) {
+          const syncRes = await fetch("/api/users", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              department: user.department || "Operations",
+              xp: stats.xp,
+            }),
+          });
+          if (!syncRes.ok) {
+            console.error("Sync error:", await syncRes.text());
+          }
+        }
+
+        // Then fetch all users from database
+        const response = await fetch("/api/users");
+        const data = await response.json();
+
+        console.log("Leaderboard API response:", { status: response.status, data });
+
         if (response.ok) {
-          const data = await response.json();
           if (Array.isArray(data) && data.length > 0) {
-            setCompetitors(data);
+            // Transform database users to LeaderboardEntry format
+            const dbCompetitors = data.map((dbUser: any) => {
+              const isCurrentUser = user && dbUser.email === user.email;
+              return {
+                name: isCurrentUser ? `${dbUser.name} (You)` : dbUser.name,
+                score: dbUser.xp || 0,
+                badge: dbUser.badge || "Bronze",
+                avatar: dbUser.email || dbUser.name,
+                department: dbUser.department || "Operations",
+              };
+            });
+            setCompetitors(dbCompetitors);
           } else {
-            setCompetitors(mockData);
+            setError("No users found in database. Please register and complete some levels first.");
+            setCompetitors([]);
           }
         } else {
-          // Use mock data if API fails
-          setCompetitors(mockData);
+          setError(`API Error: ${response.status} - ${JSON.stringify(data)}`);
+          setCompetitors([]);
         }
-      } catch (error) {
-        console.error("Failed to fetch leaderboard:", error);
-        setCompetitors(mockData);
+      } catch (err: any) {
+        console.error("Failed to fetch leaderboard:", err);
+        setError(`Error: ${err.message}`);
+        setCompetitors([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLeaderboard();
-  }, []);
-
-  // Add current user to leaderboard if authenticated
-  useEffect(() => {
-    if (user && competitors.length > 0) {
-      const userInLeaderboard = competitors.some(c => c.name.includes(user.name));
-      if (!userInLeaderboard) {
-        const userEntry: LeaderboardEntry = {
-          name: `${user.name} (You)`,
-          score: stats.xp,
-          badge: stats.xp > 10000 ? "Diamond" : stats.xp > 8000 ? "Gold" : stats.xp > 5000 ? "Silver" : "Bronze",
-          avatar: user.email || "sop",
-          department: user.department || "Operations",
-        };
-        setCompetitors(prev => [...prev, userEntry]);
-      }
-    }
+    fetchAndSync();
   }, [user, stats.xp]);
 
   // Sort by score descending
@@ -105,7 +113,26 @@ export default function LeaderboardPage() {
   return (
     <div className="min-h-screen bg-[#050b16] p-8 pb-20 text-white font-sans">
       <div className="max-w-4xl mx-auto space-y-10">
-        
+
+        {/* Loading & Error States */}
+        {loading && (
+          <div className="text-center text-white/60">Loading leaderboard...</div>
+        )}
+
+        {error && (
+          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-200">
+            <p className="font-bold">⚠️ {error}</p>
+            <p className="text-sm mt-2">Check browser console for details</p>
+          </div>
+        )}
+
+        {!loading && competitors.length === 0 && !error && (
+          <div className="text-center text-white/60">
+            <p>No data available yet.</p>
+            <p className="text-sm mt-2">Make sure Supabase tables are created and users exist.</p>
+          </div>
+        )}
+
         {/* Header Section */}
         <div className="text-center space-y-4">
           <div className="w-20 h-20 rounded-full bg-[#facc15]/20 flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(250,204,21,0.2)]">

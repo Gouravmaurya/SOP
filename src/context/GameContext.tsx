@@ -182,6 +182,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             console.error("Failed to save progress to Supabase:", error.message, error.details);
           }
         }
+
+        // Also save XP to users table for leaderboard
+        await fetch("/api/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            department: user.department || "Operations",
+            xp: stats.xp,
+          }),
+        }).catch(err => console.log("XP sync note:", err.message));
       } catch (err: any) {
         console.error("Failed to save progress to Supabase:", err.message || err);
       }

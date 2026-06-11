@@ -115,11 +115,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         // Supabase Login
         const password = pass || nameOrPass;
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password
         });
         if (error) throw new Error(error.message);
+
+        // Save user to database
+        if (data.user) {
+          await fetch("/api/users", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: data.user.id,
+              name: data.user.user_metadata?.name || email.split("@")[0],
+              email: data.user.email,
+              department: data.user.user_metadata?.department || "Operations",
+              xp: 0,
+            }),
+          });
+        }
+
         router.push("/");
       }
     } catch (error: any) {
@@ -149,7 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!pass) {
           throw new Error("Password is required for registration.");
         }
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password: pass,
           options: {
@@ -160,6 +176,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         });
         if (error) throw new Error(error.message);
+
+        // Save user to database
+        if (data.user) {
+          await fetch("/api/users", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: data.user.id,
+              name: name,
+              email: email,
+              department: department,
+              xp: 0,
+            }),
+          });
+        }
+
         router.push("/");
       }
     } catch (error: any) {

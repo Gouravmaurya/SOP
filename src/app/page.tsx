@@ -1,30 +1,57 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { 
-  Play, 
-  Trophy, 
-  Target, 
-  Zap, 
-  ChevronRight, 
-  Star, 
-  TrendingUp, 
-  Users, 
+import {
+  Play,
+  Trophy,
+  Target,
+  Zap,
+  ChevronRight,
+  Star,
+  TrendingUp,
+  Users,
   Activity,
   ArrowUpRight,
   ShieldCheck
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-
-
-
 import { useAuth } from "@/context/AuthContext";
 import { useGame } from "@/context/GameContext";
+import { useState, useEffect } from "react";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const { stats, levels } = useGame();
+  const [userRank, setUserRank] = useState<number>(0);
+  const [topUsers, setTopUsers] = useState<any[]>([]);
+
+  // Fetch leaderboard to get user's actual rank
+  useEffect(() => {
+    const fetchRank = async () => {
+      try {
+        const response = await fetch("/api/users");
+        if (response.ok) {
+          const users = await response.json();
+          if (Array.isArray(users)) {
+            // Find current user's rank
+            const userIndex = users.findIndex((u: any) => u.email === user?.email);
+            if (userIndex >= 0) {
+              setUserRank(userIndex + 1);
+            }
+            // Get top 3 users
+            setTopUsers(users.slice(0, 3));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch rank:", error);
+      }
+    };
+
+    if (user?.email) {
+      fetchRank();
+    }
+  }, [user?.email, stats.xp]);
 
   const totalQuestions = 48; // Total SOPs mock
   const completedLevels = levels.filter(l => l.status === "completed").length;
@@ -97,14 +124,14 @@ export default function Dashboard() {
            <div className="glass-panel p-6 bg-white/5 border-white/10 backdrop-blur-xl flex items-center gap-6">
               <div className="flex flex-col items-center">
                  <span className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-1">GLOBAL RANK</span>
-                 <span className="text-4xl font-black text-[#facc15] italic">#14</span>
+                 <span className="text-4xl font-black text-[#facc15] italic">#{userRank || "N/A"}</span>
               </div>
               <div className="h-10 w-px bg-white/10" />
               <div className="flex flex-col">
                  <span className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-1">NEXT REWARD</span>
                  <div className="flex items-center gap-2">
                     <Trophy size={16} className="text-[#a855f7]" />
-                    <span className="text-sm font-black text-white italic">Elite Badge</span>
+                    <span className="text-sm font-black text-white italic">{stats.xp > 10000 ? "Master Badge" : "Elite Badge"}</span>
                  </div>
               </div>
            </div>
@@ -185,31 +212,68 @@ export default function Dashboard() {
           
           <div className="glass-panel overflow-hidden border-white/5">
             {[
-              { name: 'Priya Sharma', score: '12,450', rank: 1, avatar: '7' },
-              { name: 'Rahul Verma', score: '11,200', rank: 2, avatar: '3' },
-              { name: 'Sneha Patel', score: '10,800', rank: 3, avatar: '12' },
-              { name: `${user?.name || 'Aarav'} (You)`, score: stats.xp.toLocaleString(), rank: stats.xp > 10000 ? 3 : 14, avatar: user?.avatar?.split('=')[1] || 'Aarav', self: true },
-            ].sort((a, b) => a.rank - b.rank).map((userItem) => (
-              <div key={userItem.name} className={cn(
-                "flex items-center justify-between p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors",
-                userItem.self && "bg-[#0ea5e9]/5"
-              )}>
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-6 text-[10px] font-black text-center italic",
-                    userItem.rank === 1 ? "text-[#facc15]" : "text-white/40"
-                  )}>#{userItem.rank}</div>
-                  <div className="w-8 h-8 rounded-full border border-white/10 p-0.5">
-                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userItem.avatar}`} className="w-full h-full rounded-full" />
+              ...(topUsers.length > 0
+                ? topUsers.map((u: any, i: number) => ({
+                    name: u.name,
+                    score: u.xp.toLocaleString(),
+                    rank: i + 1,
+                    avatar: u.email || u.name,
+                    self: false
+                  }))
+                : [
+                    { name: 'Loading...', score: '—', rank: 1, avatar: 'loading', self: false },
+                  ]),
+              {
+                name: `${user?.name || 'Aarav'} (You)`,
+                score: stats.xp.toLocaleString(),
+                rank: userRank || 0,
+                avatar: user?.email || 'user',
+                self: true
+              }
+            ]
+              .filter((u, i, arr) => {
+                // Remove duplicate current user if already in top 3
+                if (u.self && i > 0 && arr.slice(0, 3).some(x => x.avatar === u.avatar && !x.self)) {
+                  return false;
+                }
+                return i < 4;
+              })
+              .sort((a, b) => (a.self ? 1 : a.rank) - (b.self ? 1 : b.rank))
+              .map((userItem) => (
+                <div
+                  key={userItem.name}
+                  className={cn(
+                    "flex items-center justify-between p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors",
+                    userItem.self && "bg-[#0ea5e9]/5"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        "w-6 text-[10px] font-black text-center italic",
+                        userItem.rank === 1 ? "text-[#facc15]" : "text-white/40"
+                      )}
+                    >
+                      #{userItem.rank || "—"}
+                    </div>
+                    <div className="w-8 h-8 rounded-full border border-white/10 p-0.5">
+                      <img
+                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userItem.avatar}`}
+                        className="w-full h-full rounded-full"
+                      />
+                    </div>
+                    <span
+                      className={cn(
+                        "text-xs font-bold truncate",
+                        userItem.self ? "text-[#0ea5e9]" : "text-white/80"
+                      )}
+                    >
+                      {userItem.name}
+                    </span>
                   </div>
-                  <span className={cn(
-                    "text-xs font-bold",
-                    userItem.self ? "text-[#0ea5e9]" : "text-white/80"
-                  )}>{userItem.name}</span>
+                  <span className="text-[10px] font-black text-white italic">{userItem.score} XP</span>
                 </div>
-                <span className="text-[10px] font-black text-white italic">{userItem.score} XP</span>
-              </div>
-            ))}
+              ))}
           </div>
           
           {/* Recent Achievement Callout */}

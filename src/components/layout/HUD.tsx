@@ -4,8 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Bell, 
   Search, 
-  Zap, 
-  Coins, 
   Star,
   ChevronDown,
   Activity,
@@ -37,18 +35,6 @@ export function HUD() {
       {/* Resource Indicators */}
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-8 px-6 py-2 rounded-2xl bg-white/5 border border-white/5">
-          <ResourceChip 
-            icon={<Zap size={14} className="text-[#0ea5e9]" />} 
-            value={`${stats.stamina}/${stats.maxStamina}`} 
-            label="Stamina" 
-          />
-          <div className="w-px h-6 bg-white/10" />
-          <ResourceChip 
-            icon={<Coins size={14} className="text-[#facc15]" />} 
-            value={stats.points.toLocaleString()} 
-            label="Credits" 
-          />
-          <div className="w-px h-6 bg-white/10" />
           <ResourceChip 
             icon={<Star size={14} className="text-[#a855f7]" />} 
             value={stats.xp.toLocaleString()} 

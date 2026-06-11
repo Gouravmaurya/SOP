@@ -24,15 +24,22 @@ export default function MissionPage() {
 
   if (!currentLevel) return null;
 
+  const XP_BASE = 500;       // Flat XP for completing any level
+  const XP_STAR_BONUS = 100; // Extra XP per star above 1 (2★ = +100, 3★ = +200)
+
   const handleComplete = (score: number) => {
-    const qCount = levelQuestions[currentLevel.id]?.length || 2;
+    const qCount = levelQuestions[currentLevel.id]?.length || 5;
     const ratio = score / qCount;
     const stars = ratio >= 0.8 ? 3 : ratio >= 0.5 ? 2 : 1;
     const accuracy = Math.round(ratio * 100);
+
+    // XP = flat base (500) + bonus for extra stars
+    // 1★ = 500 XP, 2★ = 600 XP, 3★ = 700 XP
+    const xpEarned = XP_BASE + (stars - 1) * XP_STAR_BONUS;
     
-    setResults({ score, stars, accuracy });
+    setResults({ score: xpEarned, stars, accuracy });
     setMissionState("summary");
-    completeLevel(currentLevel.id, score * 100, stars);
+    completeLevel(currentLevel.id, xpEarned, stars);
   };
 
   const renderLevelArchetype = () => {
@@ -85,7 +92,7 @@ export default function MissionPage() {
                 Remember: Safety decisions are prioritized.
               </p>
               
-              <div className="grid grid-cols-2 gap-4 mb-8">
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="p-4 rounded-xl bg-white/5 border border-white/5">
                   <div className="text-[10px] text-white/40 uppercase font-black tracking-widest mb-1">Archetype</div>
                   <div className="text-sm font-bold text-white capitalize">{currentLevel.type}</div>
@@ -93,6 +100,29 @@ export default function MissionPage() {
                 <div className="p-4 rounded-xl bg-white/5 border border-white/5">
                   <div className="text-[10px] text-white/40 uppercase font-black tracking-widest mb-1">Estimated Time</div>
                   <div className="text-sm font-bold text-white">3-5 Mins</div>
+                </div>
+              </div>
+
+              {/* XP Breakdown for this level */}
+              <div className="p-4 rounded-xl bg-[#a855f7]/10 border border-[#a855f7]/20 mb-8 text-left">
+                <div className="text-[10px] text-[#a855f7] uppercase font-black tracking-widest mb-3">XP You Can Earn</div>
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-white/50">Complete Level</span>
+                    <span className="font-black text-white">+500 XP</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/50">★★ Good (≥50% correct)</span>
+                    <span className="font-black text-[#facc15]">+100 XP bonus</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/50">★★★ Perfect (≥80% correct)</span>
+                    <span className="font-black text-[#facc15]">+200 XP bonus</span>
+                  </div>
+                  <div className="border-t border-white/10 pt-1.5 flex justify-between">
+                    <span className="text-white/70 font-bold">Max Earnable</span>
+                    <span className="font-black text-[#a855f7]">700 XP</span>
+                  </div>
                 </div>
               </div>
 
@@ -151,7 +181,7 @@ export default function MissionPage() {
               <div className="grid grid-cols-2 gap-4 mb-10">
                 <div className="p-6 rounded-2xl bg-[#a855f7]/10 border border-[#a855f7]/20">
                   <div className="text-[10px] text-[#a855f7] uppercase font-black tracking-widest mb-1">XP Gained</div>
-                  <div className="text-2xl font-black text-white">+{results.score * 100}</div>
+                  <div className="text-2xl font-black text-white">+{results.score}</div>
                 </div>
                 <div className="p-6 rounded-2xl bg-green-500/10 border border-green-500/20">
                   <div className="text-[10px] text-green-500 uppercase font-black tracking-widest mb-1">Accuracy</div>
