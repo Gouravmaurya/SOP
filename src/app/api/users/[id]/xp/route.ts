@@ -6,13 +6,14 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   if (!supabaseUrl || !supabaseAnonKey) {
     return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });
   }
 
   try {
+    const { id } = await params;
     const body = await request.json();
     const { xpDelta } = body;
 
@@ -26,7 +27,7 @@ export async function PATCH(
     const { data: user, error: fetchError } = await supabase
       .from("users")
       .select("xp")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (fetchError) {
@@ -43,7 +44,7 @@ export async function PATCH(
         badge: calculateBadge(newXp),
         updated_at: new Date().toISOString(),
       })
-      .eq("id", params.id)
+      .eq("id", id)
       .select();
 
     if (error) {
