@@ -2,18 +2,21 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { 
-  Download, 
-  ShieldCheck, 
-  TrendingUp, 
-  Users, 
+import {
+  Download,
+  ShieldCheck,
+  TrendingUp,
+  Users,
   Activity,
   Search,
   Filter,
-  ChevronLeft
+  ChevronLeft,
+  RotateCcw
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useGame } from "@/context/GameContext";
+import { useAuth } from "@/context/AuthContext";
 
 // Dummy data matching the requested metrics and Indian names
 const mockReportData = [
@@ -25,8 +28,33 @@ const mockReportData = [
 ];
 
 export default function AdminReportPage() {
+  const { resetGame } = useGame();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<1 | 2 | 3>(1);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const handleResetProgress = async () => {
+    if (confirm("⚠️ This will reset all your game progress. Are you sure?")) {
+      try {
+        // Reset local state
+        resetGame();
+
+        // Reset Supabase data if user is authenticated
+        if (user?.id) {
+          await fetch("/api/reset", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: user.id }),
+          });
+        }
+
+        alert("✅ Game progress reset! Refresh the page.");
+      } catch (error) {
+        console.error("Reset error:", error);
+        alert("❌ Error resetting progress. Try again.");
+      }
+    }
+  };
 
   const handleDownloadCSV = () => {
     // Generate CSV from mockReportData
@@ -87,7 +115,13 @@ export default function AdminReportPage() {
           </div>
           
           <div className="flex items-center gap-4">
-            <button 
+            <button
+              onClick={handleResetProgress}
+              className="px-6 py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400 font-black uppercase tracking-widest text-xs rounded-xl flex items-center gap-2 transition-all"
+            >
+              <RotateCcw size={16} /> Reset Progress
+            </button>
+            <button
               onClick={handleDownloadCSV}
               className="px-6 py-3 bg-[#0ea5e9] hover:bg-[#00f3ff] text-black font-black uppercase tracking-widest text-xs rounded-xl flex items-center gap-2 shadow-[0_0_20px_rgba(14,165,233,0.3)] transition-all"
             >

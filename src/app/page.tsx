@@ -56,7 +56,7 @@ export default function Dashboard() {
   const totalQuestions = 48; // Total SOPs mock
   const completedLevels = levels.filter(l => l.status === "completed").length;
   const completionRate = completedLevels > 0 ? Math.round((completedLevels / totalQuestions) * 100) : 0;
-  const accuracy = completedLevels > 0 ? Math.round((stats.stars / (completedLevels * 3)) * 100) : 0;
+  const accuracy = completedLevels > 0 ? Math.min(100, Math.round((stats.stars / (completedLevels * 3)) * 100)) : 0;
 
   const dashboardStats = [
     { label: "Completion Rate", value: `${completionRate}%`, icon: Activity, color: "text-[#22c55e]", bg: "bg-[#22c55e]/10" },
@@ -180,7 +180,7 @@ export default function Dashboard() {
              {/* Simple bar chart visualization */}
              {[45, 60, 40, 85, 55, 90, 75, 95, 65, 80].map((h, i) => (
                <div key={i} className="flex-1 flex flex-col items-center gap-3">
-                  <motion.div 
+                  <motion.div
                     initial={{ height: 0 }}
                     animate={{ height: `${h}%` }}
                     transition={{ delay: i * 0.05, duration: 1 }}
@@ -192,10 +192,10 @@ export default function Dashboard() {
                   <span className="text-[8px] font-bold text-white/20 uppercase">MAY {i + 1}</span>
                </div>
              ))}
-             
+
              {/* Chart Overlay Text */}
              <div className="absolute top-10 left-10">
-                <div className="text-4xl font-black text-white italic">92.4 <span className="text-lg opacity-40">SQI</span></div>
+                <div className="text-4xl font-black text-white italic">92.4 <span className="text-lg opacity-40">SQ<sup className="text-xs relative -top-2">+</sup>I</span></div>
                 <div className="text-[10px] font-bold text-[#22c55e] uppercase tracking-[0.2em] mt-1">Safety Quality Index • Trending Up</div>
              </div>
           </div>

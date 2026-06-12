@@ -30,7 +30,7 @@ export default function MissionPage() {
   const handleComplete = (score: number) => {
     const qCount = levelQuestions[currentLevel.id]?.length || 5;
     const ratio = score / qCount;
-    const stars = ratio >= 0.8 ? 3 : ratio >= 0.5 ? 2 : 1;
+    const stars = ratio >= 0.8 ? 3 : ratio >= 0.5 ? 2 : ratio > 0 ? 1 : 0;
     const accuracy = Math.round(ratio * 100);
 
     // XP = flat base (500) + bonus for extra stars

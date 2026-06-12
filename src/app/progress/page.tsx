@@ -23,7 +23,7 @@ export default function ProgressPage() {
   
   const completedLevels = levels.filter(l => l.status === "completed").length;
   const currentLevel = stats.xp > 10000 ? "Diamond" : stats.xp > 8000 ? "Gold" : stats.xp > 5000 ? "Silver" : "Bronze";
-  const accuracy = completedLevels > 0 ? Math.round((stats.stars / (completedLevels * 3)) * 100) : 0;
+  const accuracy = completedLevels > 0 ? Math.min(100, Math.round((stats.stars / (completedLevels * 3)) * 100)) : 0;
 
   const getLevelColor = (lvl: string) => {
     switch(lvl) {
